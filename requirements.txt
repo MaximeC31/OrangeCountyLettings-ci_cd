@@ -1,3 +1,14 @@
-django==3.0
-flake8==3.7.0
-pytest-django==3.9.0
+Django==5.2.18
+flake8==7.4.1
+pytest==9.1.1
+pytest-django==4.14.0
+
+asgiref==3.12.1
+iniconfig==2.3.1
+mccabe==0.7.0
+packaging==26.3
+pluggy==1.7.0
+pycodestyle==2.15.0
+pyflakes==4.0.3
+Pygments==2.21.0
+sqlparse==0.6.0

@@ -1,3 +1,16 @@
 **/__pycache__
 *.pyc
 venv
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.DS_Store
+docs/
+tasks/
+AGENTS.md

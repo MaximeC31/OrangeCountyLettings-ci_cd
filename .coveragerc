@@ -1,0 +1,11 @@
+[run]
+source =
+    oc_lettings_site
+    lettings
+    profiles
+omit =
+    */migrations/*
+    */tests.py
+
+[report]
+fail_under = 81

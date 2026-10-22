@@ -1,29 +1,32 @@
+"""Transfer historical profiles to the profiles app."""
+
 from django.db import migrations
 
 
 def copy_profiles_data(apps, schema_editor):
-    db_alias = schema_editor.connection.alias
+    """Copy profiles, keeping their IDs, user links and favorite cities."""
+    database_alias = schema_editor.connection.alias
 
-    OldProfile = apps.get_model("oc_lettings_site", "Profile")
-    NewProfile = apps.get_model("profiles", "Profile")
+    SourceProfile = apps.get_model("oc_lettings_site", "Profile")
+    TargetProfile = apps.get_model("profiles", "Profile")
 
-    for old_profile in OldProfile.objects.using(db_alias).order_by("pk"):
-        NewProfile.objects.using(db_alias).create(
-            pk=old_profile.pk,
-            user_id=old_profile.user_id,
-            favorite_city=old_profile.favorite_city,
+    for profile in SourceProfile.objects.using(database_alias).order_by("pk"):
+        TargetProfile.objects.using(database_alias).create(
+            pk=profile.pk,
+            user_id=profile.user_id,
+            favorite_city=profile.favorite_city,
         )
 
 
 def reverse_profiles_data(apps, schema_editor):
-    db_alias = schema_editor.connection.alias
+    """Delete matching target profiles; this does not restore historical data."""
+    database_alias = schema_editor.connection.alias
 
-    OldProfile = apps.get_model("oc_lettings_site", "Profile")
-    NewProfile = apps.get_model("profiles", "Profile")
+    SourceProfile = apps.get_model("oc_lettings_site", "Profile")
+    TargetProfile = apps.get_model("profiles", "Profile")
 
-    NewProfile.objects.using(db_alias).filter(
-        pk__in=OldProfile.objects.using(db_alias).values_list("pk", flat=True)
-    ).delete()
+    source_profile_ids = SourceProfile.objects.using(database_alias).values_list("pk", flat=True)
+    TargetProfile.objects.using(database_alias).filter(pk__in=source_profile_ids).delete()
 
 
 class Migration(migrations.Migration):

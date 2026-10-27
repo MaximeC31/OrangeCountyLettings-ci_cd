@@ -7,15 +7,15 @@ from .models import Letting
 def index(request):
     """Render the list of every letting."""
     lettings_list = Letting.objects.all()
-    context = {'lettings_list': lettings_list}
-    return render(request, 'lettings/index.html', context)
+    context = {"lettings_list": lettings_list}
+    return render(request, "lettings/index.html", context)
 
 
 def letting(request, letting_id):
     """Render one letting, or a 404 page when it does not exist."""
     letting = get_object_or_404(Letting, id=letting_id)
     context = {
-        'title': letting.title,
-        'address': letting.address,
+        "title": letting.title,
+        "address": letting.address,
     }
-    return render(request, 'lettings/letting.html', context)
+    return render(request, "lettings/letting.html", context)

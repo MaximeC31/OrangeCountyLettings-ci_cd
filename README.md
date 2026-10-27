@@ -2,6 +2,24 @@
 
 Site web d'Orange County Lettings
 
+## Documentation
+
+La documentation Sphinx est dans `doc/source`. Créer l'environnement si nécessaire avec `python3.13 -m venv .venv`, puis installer les dépendances documentaires :
+
+```console
+.venv/bin/python -m pip install -r doc/requirements.txt
+```
+
+Construire :
+
+```console
+.venv/bin/sphinx-build -b html -W --keep-going doc/source doc/build/html
+```
+
+Ouvrir `doc/build/html/index.html`.
+
+Les sections historiques de ce README décrivent le dépôt starter et ne reflètent pas l'installation actuelle. Elles seront remplacées.
+
 ## Développement local
 
 ### Prérequis

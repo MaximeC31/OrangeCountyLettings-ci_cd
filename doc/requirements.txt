@@ -1,0 +1,2 @@
+Sphinx==9.2.0
+-r ../requirements.txt

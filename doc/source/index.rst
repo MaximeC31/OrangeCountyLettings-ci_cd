@@ -9,7 +9,7 @@ Site de locations immobilières existant.
 Périmètre
 ---------
 
-Les pages publiques et l'administration sont livrées. Le site ne propose pas d'API REST, de réservation ni de paiement. La CI/CD, Docker, Sentry et le déploiement ne sont pas configurés. Voir :doc:`deploiement`.
+Les pages publiques et l'administration sont livrées. Le site ne propose pas d'API REST, de réservation ni de paiement. La CI de contrôle (lint et tests) existe ; Docker, Sentry, la publication d'image et le déploiement ne sont pas configurés. Voir :doc:`deploiement`.
 
 Technologies
 ------------

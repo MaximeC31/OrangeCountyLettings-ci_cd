@@ -2,6 +2,10 @@
 
 Site web d'Orange County Lettings
 
+## Intégration continue
+
+Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) s'exécute sous Python 3.13 à chaque push sur une branche, sans déclenchement sur les tags. Il installe `requirements.txt`, lance le lint ciblé, puis `pytest --cov` avec le seuil de 81 % de `.coveragerc`. Un contrôle en échec fait échouer le workflow. Il ne construit ni ne déploie d'image ; bloquer les fusions demande une protection de branche.
+
 ## Documentation
 
 La documentation Sphinx est dans `doc/source`. Créer l'environnement si nécessaire avec `python3.13 -m venv .venv`, puis installer les dépendances documentaires :

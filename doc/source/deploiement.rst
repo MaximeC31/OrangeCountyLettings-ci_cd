@@ -4,7 +4,7 @@ Déploiement
 État actuel
 -----------
 
-Aucun Docker, Docker Hub, Render, CI/CD ni Sentry n'est configuré. Aucun site public n'est déployé. ``/health`` n'existe pas.
+Aucun Docker, Docker Hub, Render ni Sentry n'est configuré. Aucun site public n'est déployé. La CI GitHub Actions exécute le lint et les tests, sans conteneurisation ni déploiement. ``/health`` n'existe pas.
 
 Configuration et limites
 ------------------------
@@ -16,8 +16,7 @@ Objectifs et procédure cible
 
 Les éléments suivants ne sont pas configurés.
 
-- CI/CD avec contrôles, seuil de couverture et lint.
-- Confirmation de l'écart entre ``main`` et ``master``.
+- CD : conteneurisation et déploiement (la CI de contrôle existe déjà).
 - Image Docker ``linux/amd64`` taguée par commit.
 - Publication de l'image sur Docker Hub.
 - Service Render gratuit, lancé en une commande.

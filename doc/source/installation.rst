@@ -60,7 +60,7 @@ Fournir la base migrée ``oc-lettings-site.sqlite3`` à la racine : elle est ign
    docker build --platform linux/amd64 -t oc-lettings:local .
    docker run --init --env-file .env -p 127.0.0.1:8000:8000 oc-lettings:local
 
-Le lanceur Docker impose ``DJANGO_DEBUG=false`` et ne crée aucun administrateur. Les données du conteneur sont éphémères : un conteneur recréé repart de la base incluse lors du build, sans modifier le fichier local. Voir :doc:`deploiement` pour les limites.
+Le conteneur démarre Gunicorn directement, avec ``DJANGO_DEBUG=false`` et une écoute sur ``0.0.0.0`` et le port ``PORT`` (8000 par défaut). Le build collecte les fichiers statiques dans ``STATIC_ROOT`` avec une clé factice dédiée ; la clé réelle reste fournie à l'exécution par ``--env-file``. WhiteNoise sert les fichiers statiques du site et de l'administration. Aucun administrateur n'est créé. Les données du conteneur sont éphémères : un conteneur recréé repart de la base incluse lors du build, sans modifier le fichier local. Voir :doc:`deploiement` pour les limites.
 
 Contrôles Django
 ----------------
@@ -76,7 +76,7 @@ Lint, tests et couverture
 
 .. code-block:: console
 
-   .venv/bin/python -m flake8 manage.py oc_lettings_site lettings profiles docker --statistics --count
+   .venv/bin/python -m flake8 manage.py oc_lettings_site lettings profiles --statistics --count
    .venv/bin/python -m flake8 --exclude='' lettings/migrations/0002_copy_lettings_data.py profiles/migrations/0002_copy_profiles_data.py --statistics --count
    .venv/bin/python -m pytest --cov
 

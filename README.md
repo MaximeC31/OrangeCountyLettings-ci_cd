@@ -29,7 +29,7 @@ Appliquer les migrations puis démarrer le serveur local :
 Avec `.venv` activé, `python manage.py runserver` suffit également. Lint et tests utilisent la même configuration locale :
 
 ```console
-.venv/bin/python -m flake8 manage.py oc_lettings_site lettings profiles docker --statistics --count
+.venv/bin/python -m flake8 manage.py oc_lettings_site lettings profiles --statistics --count
 .venv/bin/python -m pytest --cov
 ```
 
@@ -37,7 +37,7 @@ Avec `.venv` activé, `python manage.py runserver` suffit également. Lint et te
 
 Docker doit être installé et démarré sur la machine hôte.
 
-Docker injecte les variables avec `--env-file .env`, sans copier ce fichier dans l'image. Le lanceur impose `DJANGO_DEBUG=false`, même si `.env` contient `true` pour le développement local, puis lance le serveur de démonstration avec `--insecure --noreload`.
+Docker injecte les variables avec `--env-file .env`, sans copier ce fichier dans l'image. Le conteneur démarre Gunicorn avec `DJANGO_DEBUG=false`, même si `.env` contient `true` pour le développement local. Gunicorn écoute sur `0.0.0.0` et le port `PORT` (8000 par défaut). WhiteNoise sert les fichiers statiques du site et de l'administration, collectés lors de la construction de l'image.
 
 Placer la base migrée `oc-lettings-site.sqlite3` à la racine et arrêter les processus qui l'utilisent avant la construction. Docker la copie telle quelle, sans transformer les utilisateurs ni les autres données. Construire puis lancer l'image locale :
 
@@ -56,7 +56,7 @@ Aucune image n'est publiée sur Docker Hub. Render, Sentry, HTTPS et la CD ne so
 
 ## Intégration continue
 
-Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) s'exécute sous Python 3.13 à chaque push sur une branche, sans déclenchement sur les tags. Il installe `requirements.txt`, lance le lint ciblé (`manage.py`, les trois applications et `docker`), puis `pytest --cov` avec le seuil de 81 % de `.coveragerc`. Un contrôle en échec fait échouer le workflow. Il ne construit ni ne déploie d'image ; bloquer les fusions demande une protection de branche.
+Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) s'exécute sous Python 3.13 à chaque push sur une branche, sans déclenchement sur les tags. Il installe `requirements.txt`, lance le lint ciblé (`manage.py` et les trois applications), puis `pytest --cov` avec le seuil de 81 % de `.coveragerc`. Un contrôle en échec fait échouer le workflow. Il ne construit ni ne déploie d'image ; bloquer les fusions demande une protection de branche.
 
 ## Documentation
 

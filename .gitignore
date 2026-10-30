@@ -22,3 +22,4 @@ AGENTS.md
 *.sqlite3-shm
 
 doc/build/
+staticfiles/

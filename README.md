@@ -46,13 +46,35 @@ docker build --platform linux/amd64 -t oc-lettings:local .
 docker run --init --env-file .env -p 127.0.0.1:8000:8000 oc-lettings:local
 ```
 
-La base reste ignorée par Git et doit être fournie avant le build d'un clone neuf. Son contenu complet est inclus dans l'image et devient téléchargeable si celle-ci est publiée.
+La base reste ignorée par Git et doit être fournie avant le build d'un clone neuf. Son contenu complet, dont les comptes, courriels, mots de passe hachés et sessions, est téléchargeable dans l'image publique. `.dockerignore` exclut notamment `.env`, Git, les environnements locaux et les caches, mais conserve la SQLite.
 
 Aucun compte administrateur n'est créé au démarrage : les comptes de la base sont conservés.
 
 La base SQLite est embarquée dans l'image, sans volume : les écritures sont éphémères et un conteneur recréé repart de la copie incluse lors du build. Un simple redémarrage du même conteneur conserve sa couche inscriptible. Les écritures du conteneur ne modifient pas la base locale.
 
-Aucune image n'est publiée sur Docker Hub. Render, Sentry, HTTPS et la CD ne sont pas configurés.
+## Docker Hub — publication manuelle
+
+L'image publique [`maximec31/oc-lettings:412b9c7`](https://hub.docker.com/r/maximec31/oc-lettings/tags) a été publiée et son lancement depuis Docker Hub vérifié manuellement.
+
+Pour publier depuis les sources correspondant au commit `412b9c7`, avec la SQLite migrée fournie comme ci-dessus :
+
+```console
+docker login
+docker build --platform linux/amd64 -t maximec31/oc-lettings:412b9c7 .
+docker push maximec31/oc-lettings:412b9c7
+```
+
+Tester l'image localement avant le `push`. Pour une nouvelle version, utiliser le tag du commit correspondant sans remplacer celui déjà publié.
+
+Pour récupérer et lancer la version publiée en une commande, Docker démarré et `.env` contenant une `DJANGO_SECRET_KEY` non vide suffisent ; Python et la SQLite ne sont pas nécessaires sur le poste :
+
+```console
+docker run --pull always --rm --platform linux/amd64 --env-file .env -p 127.0.0.1:8001:8000 maximec31/oc-lettings:412b9c7
+```
+
+Ouvrir http://127.0.0.1:8001. Si `PORT` est modifié dans `.env`, adapter le port interne `8000` de la commande. La clé reste extérieure à l'image ; les limites SQLite décrites ci-dessus s'appliquent aussi à cette version.
+
+La publication reste manuelle : GitHub Actions ne construit ni ne publie l'image. L'automatisation après les contrôles, Render, Sentry et HTTPS restent à configurer.
 
 ## Intégration continue
 

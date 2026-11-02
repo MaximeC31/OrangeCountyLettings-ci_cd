@@ -30,6 +30,24 @@ def test_letting_detail_page_shows_letting_title(client):
 
 
 @pytest.mark.django_db
+def test_letting_detail_page_uses_one_query(client, django_assert_num_queries):
+    address = Address.objects.create(
+        number=42,
+        street="Palm Street",
+        city="Irvine",
+        state="CA",
+        zip_code=92602,
+        country_iso_code="USA",
+    )
+    letting = Letting.objects.create(title="Ocean View", address=address)
+
+    with django_assert_num_queries(1):
+        response = client.get(f"/lettings/{letting.id}/")
+
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
 def test_letting_detail_page_returns_not_found(client):
     highest_id = Letting.objects.order_by("-pk").values_list("pk", flat=True).first()
     missing_id = (highest_id or 0) + 1

@@ -24,8 +24,23 @@ def test_profile_detail_page_shows_profile_username(client):
 
 
 @pytest.mark.django_db
+def test_profiles_index_page_uses_one_query(client, django_assert_num_queries):
+    for index in range(3):
+        user = User.objects.create_user(username=f"user-{index}")
+        Profile.objects.create(user=user)
+
+    with django_assert_num_queries(1):
+        response = client.get("/profiles/")
+
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
 def test_profile_detail_page_returns_not_found(client):
-    missing_username = f"missing-profile-{User.objects.count()}"
+    suffix = 0
+    while User.objects.filter(username=f"missing-profile-{suffix}").exists():
+        suffix += 1
+    missing_username = f"missing-profile-{suffix}"
 
     response = client.get(f"/profiles/{missing_username}/")
 

@@ -46,7 +46,7 @@ docker build --platform linux/amd64 -t oc-lettings:local .
 docker run --init --env-file .env -p 127.0.0.1:8000:8000 oc-lettings:local
 ```
 
-La base reste ignorée par Git et doit être fournie avant le build d'un clone neuf. Son contenu complet, dont les comptes, courriels, mots de passe hachés et sessions, est téléchargeable dans l'image publique. `.dockerignore` exclut notamment `.env`, Git, les environnements locaux et les caches, mais conserve la SQLite.
+La base `oc-lettings-site.sqlite3` est désormais versionnée avec le dépôt ; seuls ses fichiers temporaires (`-journal`, `-wal`, `-shm`) restent ignorés. Elle contient les comptes, courriels, mots de passe hachés et sessions de démonstration : son contenu complet est donc publiquement téléchargeable. `.dockerignore` exclut notamment `.env`, Git, les environnements locaux et les caches, mais conserve la SQLite.
 
 Aucun compte administrateur n'est créé au démarrage : les comptes de la base sont conservés.
 
@@ -74,7 +74,25 @@ docker run --pull always --rm --platform linux/amd64 --env-file .env -p 127.0.0.
 
 Ouvrir http://127.0.0.1:8001. Si `PORT` est modifié dans `.env`, adapter le port interne `8000` de la commande. La clé reste extérieure à l'image ; les limites SQLite décrites ci-dessus s'appliquent aussi à cette version.
 
-La publication reste manuelle : GitHub Actions ne construit ni ne publie l'image. L'automatisation après les contrôles, Render, Sentry et HTTPS restent à configurer.
+La publication reste manuelle : GitHub Actions ne construit ni ne publie l'image. La CD et Sentry restent à réaliser.
+
+## Render — offre gratuite
+
+Le service est un *Web Service* créé depuis le tableau de bord Render, avec la source **Existing Image**, l'image `docker.io/maximec31/oc-lettings:412b9c7` et le plan **Free**. Render exige une image `linux/amd64` : c'est le format publié.
+
+Variables d'environnement à définir dans le service :
+
+- `DJANGO_SECRET_KEY` : clé générée, jamais dans le dépôt ;
+- `DJANGO_DEBUG` : `false` ;
+- `DJANGO_ALLOWED_HOSTS` : `<service>.onrender.com`.
+
+Render fournit le port via `PORT` ; le CMD de l'image écoute déjà sur `${PORT:-8000}`. Render termine le TLS : le durcissement proxy, cookies sécurisés et origines CSRF n'est pas configuré.
+
+Redéploiement : *Manual Deploy > Deploy latest reference*, ou un *deploy hook*. Render ne redéploie pas automatiquement lorsqu'un tag est réécrit.
+
+Limites de l'offre gratuite : mise en veille après 15 minutes sans trafic, redémarrage d'environ une minute, système de fichiers éphémère, aucune modification SQLite conservée après un redéploiement, un redémarrage ou une mise en veille, pas de disque persistant. Le rollback est limité aux deux déploiements précédents et suppose que l'image reste disponible dans le registre.
+
+Cette démonstration n'est pas une production durable.
 
 ## Intégration continue
 

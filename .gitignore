@@ -17,6 +17,7 @@ AGENTS.md
 
 # Bases SQLite locales et fichiers temporaires associés
 *.sqlite3
+!/oc-lettings-site.sqlite3
 *.sqlite3-journal
 *.sqlite3-wal
 *.sqlite3-shm

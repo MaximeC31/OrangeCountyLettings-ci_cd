@@ -53,7 +53,7 @@ Pages disponibles : ``/``, ``/lettings/``, ``/profiles/`` et ``/admin/``. Avec `
 Docker local
 ------------
 
-Fournir la base migrée ``oc-lettings-site.sqlite3`` à la racine : elle est ignorée par Git et copiée telle quelle dans l'image, sans transformation des utilisateurs. Arrêter les processus qui l'utilisent avant le build. Préparer ``.env`` depuis ``.env.example`` avec une clé Django non vide, puis construire l'image :
+La base migrée ``oc-lettings-site.sqlite3`` est versionnée avec le dépôt et copiée telle quelle dans l'image, sans transformation des utilisateurs. Arrêter les processus qui l'utilisent avant le build. Préparer ``.env`` depuis ``.env.example`` avec une clé Django non vide, puis construire l'image :
 
 .. code-block:: console
 

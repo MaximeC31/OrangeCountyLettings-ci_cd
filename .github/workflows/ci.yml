@@ -1,11 +1,19 @@
-name: CI
+name: CI/CD
 
 on:
   push:
-    branches: ["**"]
+    branches: ["main"]
 
 permissions:
   contents: read
+
+env:
+  DOCKERHUB_USERNAME: maximec31
+  RENDER_SERVICE_ID: srv-dbkr7kek1f9s73dpmrag
+
+concurrency:
+  group: cd-main
+  cancel-in-progress: false
 
 jobs:
   quality:
@@ -30,3 +38,48 @@ jobs:
         run: python -m flake8 --exclude='' lettings/migrations/0002_copy_lettings_data.py profiles/migrations/0002_copy_profiles_data.py --statistics --count
       - name: Tests and coverage
         run: python -m pytest --cov
+
+  publish:
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      reference: ${{ steps.image.outputs.reference }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Compute image tag
+        id: image
+        run: |
+          echo "reference=docker.io/$DOCKERHUB_USERNAME/oc-lettings:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.image.outputs.reference }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+
+  deploy:
+    needs: publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      REFERENCE: ${{ needs.publish.outputs.reference }}
+    steps:
+      - name: Trigger Render deploy
+        run: |
+          payload=$(jq -n --arg imageUrl "$REFERENCE" '{imageUrl: $imageUrl, clearCache: "do_not_clear"}')
+          curl --fail --silent --show-error --max-time 30 -X POST \
+            "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" -d "$payload"

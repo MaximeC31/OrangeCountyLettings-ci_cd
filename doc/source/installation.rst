@@ -32,14 +32,14 @@ Si ``.env`` n'existe pas, le créer depuis ``.env.example`` sans écraser une co
 Base de données
 ---------------
 
-Un clone neuf ne contient aucune base. Créer une base vide et un compte administrateur personnel :
+Le dépôt contient une base migrée avec des comptes de démonstration. Pour une base neuve sans ce fichier, créer une base vide et un compte administrateur personnel :
 
 .. code-block:: console
 
    .venv/bin/python manage.py migrate
    .venv/bin/python manage.py createsuperuser
 
-Aucun seed ni compte de démonstration n'est fourni. Pour réutiliser une base du starter, la sauvegarder hors du dépôt, examiner ``.venv/bin/python manage.py migrate --plan``, puis appliquer après vérification. Ne jamais écraser une base contenant des données.
+Les migrations ne fournissent aucun seed ni compte pour une base neuve. Pour réutiliser une base du starter, la sauvegarder hors du dépôt, examiner ``.venv/bin/python manage.py migrate --plan``, puis appliquer après vérification. Ne jamais écraser une base contenant des données.
 
 Démarrage rapide
 ----------------
@@ -82,4 +82,4 @@ Lint, tests et couverture
 
 ``.coveragerc`` impose un seuil de couverture de 81 %.
 
-La CI GitHub Actions (``.github/workflows/ci.yml``) exécute ces contrôles sous Python 3.13 à chaque push sur une branche, sans déclenchement sur les tags. Le workflow échoue si le lint, les tests ou le seuil de couverture échouent. Il ne conteneurise ni ne déploie le site. Bloquer les fusions exige une protection de branche distincte.
+La CI GitHub Actions (``.github/workflows/ci.yml``) exécute le lint et les tests sous Python 3.13 à chaque push sur ``main``, sans déclenchement sur les tags ni sur les pull requests. Le workflow échoue si le lint, les tests ou le seuil de couverture échouent. Après réussite, il tente la publication sur Docker Hub puis le déploiement sur Render ; leur réussite distante doit être vérifiée. Bloquer les fusions exige une protection de branche distincte.

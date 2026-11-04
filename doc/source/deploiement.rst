@@ -4,7 +4,7 @@ Déploiement
 État actuel
 -----------
 
-L'image publique ``maximec31/oc-lettings:412b9c7`` a été publiée manuellement sur Docker Hub ; sa récupération et son lancement ont été vérifiés manuellement. Le site est déployé manuellement sur Render : https://oc-lettings-upax.onrender.com. La CI GitHub Actions exécute seulement le lint et les tests, sans publication d'image ni déploiement automatique. ``/health`` n'existe pas.
+À chaque push sur ``main``, le workflow GitHub Actions enchaîne les jobs ``quality`` (lint et tests), ``publish`` (image ``linux/amd64`` sur Docker Hub) et ``deploy`` (Render). Le tag ``fce3bab`` a été publié précédemment ; les publications utilisent les 7 premiers caractères du SHA du commit. Le site de démonstration est https://oc-lettings-upax.onrender.com. Aucun secret n'est versionné. Le workflow ne vérifie pas la disponibilité HTTP.
 
 Configuration
 -------------
@@ -28,30 +28,37 @@ Arrêter les processus qui utilisent la base locale avant le build. Les écritur
 Docker Hub
 ----------
 
-Le dépôt public est accessible sur `Docker Hub <https://hub.docker.com/r/maximec31/oc-lettings/tags>`_. Pour publier depuis les sources correspondant au commit ``412b9c7``, avec la SQLite migrée fournie :
+Le dépôt public est accessible sur `Docker Hub <https://hub.docker.com/r/maximec31/oc-lettings/tags>`_. Le workflow y publie l'image après le lint et les tests, à chaque push sur ``main``. Le tag reprend les 7 premiers caractères du SHA du commit et l'image est construite pour ``linux/amd64`` avec le label ``org.opencontainers.image.revision``.
+
+Chaque exécution reconstruit et republie l'image, sans vérifier le tag existant. Elle peut donc l'écraser, notamment en cas de collision entre deux SHA courts. Le tag ``fce3bab`` est une publication manuelle antérieure, sans ce label. La récupération et le lancement de l'image ``412b9c7``, également publiée manuellement, ont été vérifiés à l'époque.
+
+Pour récupérer et lancer une version publiée en une commande, Docker démarré et un ``.env`` contenant une ``DJANGO_SECRET_KEY`` non vide suffisent. Python et la SQLite ne sont pas nécessaires sur le poste :
 
 .. code-block:: console
 
-   docker login
-   docker build --platform linux/amd64 -t maximec31/oc-lettings:412b9c7 .
-   docker push maximec31/oc-lettings:412b9c7
-
-Tester l'image localement avant le ``push``. Pour une nouvelle version, utiliser le tag du commit correspondant sans remplacer celui déjà publié.
-
-Pour récupérer et lancer la version publiée en une commande, Docker démarré et un ``.env`` contenant une ``DJANGO_SECRET_KEY`` non vide suffisent. Python et la SQLite ne sont pas nécessaires sur le poste :
-
-.. code-block:: console
-
-   docker run --pull always --rm --platform linux/amd64 --env-file .env -p 127.0.0.1:8001:8000 maximec31/oc-lettings:412b9c7
+   docker run --pull always --rm --platform linux/amd64 --env-file .env -p 127.0.0.1:8001:8000 maximec31/oc-lettings:fce3bab
 
 Ouvrir http://127.0.0.1:8001. Si ``PORT`` est modifié dans ``.env``, adapter le port interne ``8000`` de la commande. La clé reste extérieure à l'image ; les limites SQLite décrites ci-dessus s'appliquent aussi à cette version.
+
+Déploiement continu
+-------------------
+
+Le déclencheur est limité aux pushs sur ``main``, sans tags, pull requests ni déclenchement manuel. Le groupe de concurrence ``cd-main`` limite les chevauchements de workflows : une seule exécution peut attendre et un push plus récent remplace l'attente précédente. Il n'empêche pas le chevauchement de déploiements Render encore en cours. Les jobs ``quality``, ``publish`` et ``deploy`` s'enchaînent si le précédent réussit.
+
+Secrets GitHub requis : ``DOCKERHUB_TOKEN`` (jeton en lecture/écriture) et ``RENDER_API_KEY``. Le nom Docker Hub et l'identifiant du service Render sont indiqués dans le workflow. Aucune valeur de secret n'est stockée dans le dépôt.
+
+``deploy`` appelle ``POST /v1/services/<id>/deploys`` avec la référence publiée et ``clearCache: do_not_clear``. Les erreurs HTTP 4xx et 5xx font échouer le job, mais une réponse 3xx ne le fait pas. Une demande acceptée ne garantit pas la réussite du déploiement : vérifier son état dans Render et le fonctionnement du site manuellement. Le workflow ne vérifie ni ``image.ref`` ni la disponibilité HTTP.
+
+Un échec après publication laisse le tag sur Docker Hub et le déploiement Render dans son état ; consulter les logs du job. Une réexécution complète reconstruit et republie l'image ; relancer uniquement les jobs échoués ne le fait pas nécessairement. Un push ne garantit pas la réussite distante. Aucun retour arrière automatique n'est effectué : le rollback reste manuel dans Render, dans la limite des deux déploiements précédents.
 
 Render
 ------
 
-Le service Render est un *Web Service* créé depuis le tableau de bord, avec la source
-**Existing Image**, l'image ``docker.io/maximec31/oc-lettings:412b9c7`` et le plan **Free**.
-Render exige une image ``linux/amd64`` : c'est le format publié.
+Le service Render a été créé comme *Web Service* depuis le tableau de bord, avec la source
+**Existing Image**, l'image ``docker.io/maximec31/oc-lettings`` et le plan **Free**.
+Render exige une image ``linux/amd64`` : c'est le format publié. Le tag ``412b9c7`` utilisé à
+la création a été signalé absent du registre public ; vérifier l'image configurée et le résultat
+du déploiement dans Render.
 
 Variables d'environnement à définir dans le service :
 
@@ -63,8 +70,9 @@ Render fournit le port via ``PORT`` ; le CMD de l'image écoute déjà sur ``${P
 Render termine le TLS : le durcissement proxy, cookies sécurisés et origines CSRF n'est pas
 configuré.
 
-Redéploiement : *Manual Deploy > Deploy latest reference*, ou un *deploy hook*. Render ne
-redéploie pas automatiquement lorsqu'un tag est réécrit.
+Redéploiement : automatique via le job ``deploy`` après chaque publication. Un déploiement
+manuel reste possible via *Manual Deploy > Deploy latest reference* ou un *deploy hook* ;
+Render ne redéploie pas de lui-même lorsqu'un tag est réécrit.
 
 Limites de l'offre gratuite : mise en veille après 15 minutes sans trafic, redémarrage d'environ
 une minute, système de fichiers éphémère, aucune modification SQLite conservée après un
@@ -77,7 +85,8 @@ Cette démonstration n'est pas une production durable.
 En attente
 ----------
 
-Restent à définir : publication automatisée sur Docker Hub après les contrôles,
-approvisionnement SQLite pour un futur build automatisé en CI, durcissement HTTPS (proxy,
-cookies sécurisés, origines CSRF), Sentry, CD, gestion des secrets par la plateforme et
-contrôle de santé ``/health``.
+Restent à définir : protection de branche, durcissement HTTPS (proxy, cookies sécurisés,
+origines CSRF) et Sentry. ``/health`` n'existe pas et le workflow ne contrôle pas la disponibilité HTTP.
+L'offre Render gratuite endort le service et perd les écritures SQLite à chaque
+redéploiement, redémarrage ou mise en veille : cette démonstration n'est pas une production
+durable.

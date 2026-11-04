@@ -52,33 +52,33 @@ Aucun compte administrateur n'est créé au démarrage : les comptes de la base 
 
 La base SQLite est embarquée dans l'image, sans volume : les écritures sont éphémères et un conteneur recréé repart de la copie incluse lors du build. Un simple redémarrage du même conteneur conserve sa couche inscriptible. Les écritures du conteneur ne modifient pas la base locale.
 
-## Docker Hub — publication manuelle
+## Docker Hub — publication automatique
 
-L'image publique [`maximec31/oc-lettings:412b9c7`](https://hub.docker.com/r/maximec31/oc-lettings/tags) a été publiée et son lancement depuis Docker Hub vérifié manuellement.
+L'image publique [`maximec31/oc-lettings`](https://hub.docker.com/r/maximec31/oc-lettings/tags) est publiée par le workflow à chaque push sur `main`, après le lint et les tests. Le tag reprend les 7 premiers caractères du SHA du commit et l'image est construite pour `linux/amd64` avec le label `org.opencontainers.image.revision`.
 
-Pour publier depuis les sources correspondant au commit `412b9c7`, avec la SQLite migrée fournie comme ci-dessus :
+Le tag `fce3bab` a été publié précédemment. La récupération et le lancement de l'image `412b9c7`, publiée manuellement, ont été vérifiés à l'époque. Chaque exécution reconstruit et republie l'image : un tag existant est écrasé, y compris en cas de collision entre deux SHA courts. Les images publiées manuellement ne portent pas nécessairement ce label.
 
-```console
-docker login
-docker build --platform linux/amd64 -t maximec31/oc-lettings:412b9c7 .
-docker push maximec31/oc-lettings:412b9c7
-```
-
-Tester l'image localement avant le `push`. Pour une nouvelle version, utiliser le tag du commit correspondant sans remplacer celui déjà publié.
-
-Pour récupérer et lancer la version publiée en une commande, Docker démarré et `.env` contenant une `DJANGO_SECRET_KEY` non vide suffisent ; Python et la SQLite ne sont pas nécessaires sur le poste :
+Pour récupérer et lancer une version publiée en une commande, Docker démarré et `.env` contenant une `DJANGO_SECRET_KEY` non vide suffisent ; Python et la SQLite ne sont pas nécessaires sur le poste :
 
 ```console
-docker run --pull always --rm --platform linux/amd64 --env-file .env -p 127.0.0.1:8001:8000 maximec31/oc-lettings:412b9c7
+docker run --pull always --rm --platform linux/amd64 --env-file .env -p 127.0.0.1:8001:8000 maximec31/oc-lettings:fce3bab
 ```
 
 Ouvrir http://127.0.0.1:8001. Si `PORT` est modifié dans `.env`, adapter le port interne `8000` de la commande. La clé reste extérieure à l'image ; les limites SQLite décrites ci-dessus s'appliquent aussi à cette version.
 
-La publication reste manuelle : GitHub Actions ne construit ni ne publie l'image. La CD et Sentry restent à réaliser.
+## Déploiement continu
+
+Le workflow enchaîne trois jobs après un push sur `main` : `quality` (lint et tests), `publish` (image Docker Hub), puis `deploy` (Render). Le groupe de concurrence `cd-main` limite les chevauchements de workflows ; une seule exécution peut attendre et un push plus récent remplace l'attente précédente. Il n'empêche pas le chevauchement de déploiements Render encore en cours.
+
+Le job `deploy` demande à l'API Render de déployer la référence publiée avec `clearCache: do_not_clear`. Les erreurs HTTP 4xx et 5xx font échouer le job, mais une réponse 3xx ne le fait pas et une demande acceptée ne garantit pas que le déploiement réussira. Le workflow ne vérifie ni son résultat, ni `image.ref`, ni la disponibilité HTTP : consulter Render et vérifier le site manuellement. Relancer uniquement les jobs échoués ne reconstruit pas nécessairement l'image.
+
+Secrets du dépôt : `DOCKERHUB_TOKEN` (jeton en lecture/écriture) et `RENDER_API_KEY`. Le nom Docker Hub et l'identifiant du service Render sont indiqués dans le workflow. Aucune valeur de secret n'est stockée dans le dépôt.
+
+Le workflow ne s'exécute plus que sur `main` : les pushs de branches ne sont pas contrôlés et la protection de branche n'est pas configurée. Sentry reste à faire.
 
 ## Render — offre gratuite
 
-Le service est un *Web Service* créé depuis le tableau de bord Render, avec la source **Existing Image**, l'image `docker.io/maximec31/oc-lettings:412b9c7` et le plan **Free**. Render exige une image `linux/amd64` : c'est le format publié.
+Le service a été créé depuis le tableau de bord Render comme *Web Service*, avec la source **Existing Image**, l'image `docker.io/maximec31/oc-lettings` et le plan **Free**. Render exige une image `linux/amd64` : c'est le format publié. Le tag `412b9c7` utilisé à la création a été signalé absent du registre public ; vérifier l'image configurée et le résultat du déploiement dans Render.
 
 Variables d'environnement à définir dans le service :
 
@@ -88,15 +88,15 @@ Variables d'environnement à définir dans le service :
 
 Render fournit le port via `PORT` ; le CMD de l'image écoute déjà sur `${PORT:-8000}`. Render termine le TLS : le durcissement proxy, cookies sécurisés et origines CSRF n'est pas configuré.
 
-Redéploiement : *Manual Deploy > Deploy latest reference*, ou un *deploy hook*. Render ne redéploie pas automatiquement lorsqu'un tag est réécrit.
+Le déploiement est déclenché automatiquement par le workflow après publication de l'image. Un redéploiement manuel reste possible via *Manual Deploy > Deploy latest reference* ou un *deploy hook* ; Render ne redéploie pas de lui-même lorsqu'un tag est réécrit.
 
-Limites de l'offre gratuite : mise en veille après 15 minutes sans trafic, redémarrage d'environ une minute, système de fichiers éphémère, aucune modification SQLite conservée après un redéploiement, un redémarrage ou une mise en veille, pas de disque persistant. Le rollback est limité aux deux déploiements précédents et suppose que l'image reste disponible dans le registre.
+Limites de l'offre gratuite : mise en veille après 15 minutes sans trafic, redémarrage d'environ une minute, système de fichiers éphémère, aucune modification SQLite conservée après un redéploiement, un redémarrage ou une mise en veille, pas de disque persistant. Le rollback est limité aux deux déploiements précédents et suppose que l'image reste disponible dans le registre. L'absence de protection de branche et Sentry restent des limites de cette démonstration.
 
 Cette démonstration n'est pas une production durable.
 
 ## Intégration continue
 
-Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) s'exécute sous Python 3.13 à chaque push sur une branche, sans déclenchement sur les tags. Il installe `requirements.txt`, lance le lint ciblé (`manage.py` et les trois applications), puis `pytest --cov` avec le seuil de 81 % de `.coveragerc`. Un contrôle en échec fait échouer le workflow. Il ne construit ni ne déploie d'image ; bloquer les fusions demande une protection de branche.
+Le job `quality` du workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) s'exécute sous Python 3.13 à chaque push sur `main`, sans déclenchement sur les tags ni sur les pull requests. Il installe `requirements.txt`, lance le lint ciblé (`manage.py` et les trois applications), puis `pytest --cov` avec le seuil de 81 % de `.coveragerc`. Un contrôle en échec arrête le workflow avant `publish` et `deploy`, décrits ci-dessus. Bloquer une fusion défectueuse avant `main` demanderait une protection de branche, absente aujourd'hui.
 
 ## Documentation
 

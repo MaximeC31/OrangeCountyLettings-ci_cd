@@ -9,7 +9,7 @@ Site de locations immobilières existant.
 Périmètre
 ---------
 
-Les pages publiques et l'administration sont livrées. Le site ne propose pas d'API REST, de réservation ni de paiement. Le workflow prévoit la CI (lint et tests) puis la publication Docker Hub et le déploiement Render sur les pushs vers ``main`` ; leur réussite distante reste à vérifier. Sentry reste à réaliser. Voir :doc:`deploiement`.
+Les pages publiques et l'administration sont livrées. Le site ne propose pas d'API REST, de réservation ni de paiement. Le workflow prévoit la CI (lint et tests), la publication Docker Hub et le déploiement Render sur les pushs vers ``main``. Sentry est optionnel et limité aux erreurs. Voir :doc:`deploiement`.
 
 Technologies
 ------------

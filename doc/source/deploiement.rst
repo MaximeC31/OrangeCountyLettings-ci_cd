@@ -64,7 +64,8 @@ Variables d'environnement à définir dans le service :
 
 * ``DJANGO_SECRET_KEY`` : clé générée, jamais dans le dépôt ;
 * ``DJANGO_DEBUG`` : ``false`` ;
-* ``DJANGO_ALLOWED_HOSTS`` : ``<service>.onrender.com``.
+* ``DJANGO_ALLOWED_HOSTS`` : ``<service>.onrender.com`` ;
+* ``SENTRY_DSN`` : facultatif, active Sentry s'il est renseigné.
 
 Render fournit le port via ``PORT`` ; le CMD de l'image écoute déjà sur ``${PORT:-8000}``.
 Render termine le TLS : le durcissement proxy, cookies sécurisés et origines CSRF n'est pas
@@ -82,11 +83,31 @@ dans le registre.
 
 Cette démonstration n'est pas une production durable.
 
+Sentry
+------
+
+Sentry est activé si ``SENTRY_DSN`` est défini, via ``sentry_sdk.init()`` sans configuration
+supplémentaire. Le DSN se configure dans l'environnement Render, jamais dans le dépôt ; sans
+DSN, Sentry reste inactif.
+
+Le comportement par défaut du SDK envoie l'URL et la requête, le corps de requête, les
+variables locales, le contexte source, les breadcrumbs et les sessions. Il n'y a ni tracing
+ni profiling.
+
+Vérification locale avec un DSN réel :
+
+.. code-block:: console
+
+   .venv/bin/python manage.py shell -c "import sentry_sdk; event_id = sentry_sdk.capture_exception(RuntimeError('sentry-check')); assert event_id; print(event_id); sentry_sdk.flush(5)"
+
+Contrôler ensuite l'événement dans Sentry. L'offre Render Free ne fournit pas de shell : la
+preuve sur le site déployé dépend d'une erreur réelle après déploiement.
+
 En attente
 ----------
 
-Restent à définir : protection de branche, durcissement HTTPS (proxy, cookies sécurisés,
-origines CSRF) et Sentry. ``/health`` n'existe pas et le workflow ne contrôle pas la disponibilité HTTP.
+Restent à définir : protection de branche et durcissement HTTPS (proxy, cookies sécurisés,
+origines CSRF). ``/health`` n'existe pas et le workflow ne contrôle pas la disponibilité HTTP.
 L'offre Render gratuite endort le service et perd les écritures SQLite à chaque
 redéploiement, redémarrage ou mise en veille : cette démonstration n'est pas une production
 durable.

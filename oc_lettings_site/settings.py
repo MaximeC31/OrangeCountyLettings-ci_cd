@@ -2,11 +2,13 @@ import os
 
 from pathlib import Path
 
+import sentry_sdk
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env", override=False)
+sentry_sdk.init()
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "").strip()
 if not SECRET_KEY:
@@ -106,3 +108,13 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"app": {"class": "logging.StreamHandler"}},
+    "loggers": {
+        "lettings": {"handlers": ["app"], "level": "INFO", "propagate": False},
+        "profiles": {"handlers": ["app"], "level": "INFO", "propagate": False},
+    },
+}

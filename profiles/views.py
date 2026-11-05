@@ -1,7 +1,11 @@
 """Views listing profiles and showing a single profile."""
 
+import logging
+
 from django.shortcuts import get_object_or_404, render
 from .models import Profile
+
+logger = logging.getLogger(__name__)
 
 
 def index(request):
@@ -13,6 +17,7 @@ def index(request):
 
 def profile(request, username):
     """Render one profile, or a 404 page when the username has no profile."""
+    logger.info("Profile detail requested.")
     profile = get_object_or_404(
         Profile.objects.select_related("user"), user__username=username
     )

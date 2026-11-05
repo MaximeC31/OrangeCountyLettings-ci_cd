@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Sentry test{% endblock title %}
+
+{% block content %}
+<div class="container px-5 py-5 text-center">
+    <h1>Sentry test</h1>
+    <p>Confirm to trigger a synthetic server error.</p>
+    <form method="post" action="{% url 'lettings:sentry_test' %}">
+        {% csrf_token %}
+        <button type="submit">Trigger test error</button>
+    </form>
+</div>
+{% endblock %}

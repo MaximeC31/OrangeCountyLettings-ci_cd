@@ -74,7 +74,7 @@ Le job `deploy` demande à l'API Render de déployer la référence publiée ave
 
 Secrets du dépôt : `DOCKERHUB_TOKEN` (jeton en lecture/écriture) et `RENDER_API_KEY`. Le nom Docker Hub et l'identifiant du service Render sont indiqués dans le workflow. Aucune valeur de secret n'est stockée dans le dépôt.
 
-Le workflow ne s'exécute plus que sur `main` : les pushs de branches ne sont pas contrôlés et la protection de branche n'est pas configurée. Sentry reste à faire.
+Le workflow ne s'exécute plus que sur `main` : les pushs de branches ne sont pas contrôlés et la protection de branche n'est pas configurée.
 
 ## Render — offre gratuite
 
@@ -84,15 +84,30 @@ Variables d'environnement à définir dans le service :
 
 - `DJANGO_SECRET_KEY` : clé générée, jamais dans le dépôt ;
 - `DJANGO_DEBUG` : `false` ;
-- `DJANGO_ALLOWED_HOSTS` : `<service>.onrender.com`.
+- `DJANGO_ALLOWED_HOSTS` : `<service>.onrender.com` ;
+- `SENTRY_DSN` : facultatif, active Sentry s'il est renseigné.
 
 Render fournit le port via `PORT` ; le CMD de l'image écoute déjà sur `${PORT:-8000}`. Render termine le TLS : le durcissement proxy, cookies sécurisés et origines CSRF n'est pas configuré.
 
 Le déploiement est déclenché automatiquement par le workflow après publication de l'image. Un redéploiement manuel reste possible via *Manual Deploy > Deploy latest reference* ou un *deploy hook* ; Render ne redéploie pas de lui-même lorsqu'un tag est réécrit.
 
-Limites de l'offre gratuite : mise en veille après 15 minutes sans trafic, redémarrage d'environ une minute, système de fichiers éphémère, aucune modification SQLite conservée après un redéploiement, un redémarrage ou une mise en veille, pas de disque persistant. Le rollback est limité aux deux déploiements précédents et suppose que l'image reste disponible dans le registre. L'absence de protection de branche et Sentry restent des limites de cette démonstration.
+Limites de l'offre gratuite : mise en veille après 15 minutes sans trafic, redémarrage d'environ une minute, système de fichiers éphémère, aucune modification SQLite conservée après un redéploiement, un redémarrage ou une mise en veille, pas de disque persistant. Le rollback est limité aux deux déploiements précédents et suppose que l'image reste disponible dans le registre. L'absence de protection de branche reste une limite de cette démonstration.
 
 Cette démonstration n'est pas une production durable.
+
+## Sentry — surveillance des erreurs
+
+Sentry est activé si `SENTRY_DSN` est défini, via `sentry_sdk.init()` sans configuration supplémentaire. Le DSN se configure dans l'environnement Render, jamais dans le dépôt ; sans DSN, Sentry reste inactif.
+
+Le comportement par défaut du SDK envoie l'URL et la requête, le corps de requête, les variables locales, le contexte source, les breadcrumbs et les sessions. Il n'y a ni tracing ni profiling.
+
+Vérification locale avec un DSN réel :
+
+```console
+.venv/bin/python manage.py shell -c "import sentry_sdk; event_id = sentry_sdk.capture_exception(RuntimeError('sentry-check')); assert event_id; print(event_id); sentry_sdk.flush(5)"
+```
+
+Contrôler ensuite l'événement dans Sentry. L'offre Render Free ne fournit pas de shell : la preuve sur le site déployé dépend d'une erreur réelle après déploiement.
 
 ## Intégration continue
 

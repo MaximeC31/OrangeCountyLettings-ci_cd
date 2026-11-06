@@ -1,28 +1,17 @@
 Orange County Lettings
 ======================
 
-Présentation
-------------
+Application Django de consultation de locations et de profils, avec une administration et un déploiement automatisé.
 
-Site de locations immobilières existant.
+Le projet utilise Python 3.13, Django 5.2 LTS, SQLite, pytest, Docker et Sentry. Il ne propose ni réservation, ni paiement, ni API REST.
 
-Périmètre
----------
-
-Les pages publiques et l'administration sont livrées. Le site ne propose pas d'API REST, de réservation ni de paiement. Le workflow prévoit la CI (lint et tests), la publication Docker Hub et le déploiement Render sur les pushs vers ``main``. Sentry est optionnel et limité aux erreurs. Voir :doc:`deploiement`.
-
-Technologies
-------------
-
-Python 3.13, Django 5.2 LTS, SQLite, templates Django, pytest et flake8. Les versions applicatives sont figées dans ``requirements.txt``. Sphinx 9.2.0 est déclaré dans ``doc/requirements.txt``.
-
-L'interface utilise HTML, CSS et JavaScript, avec Bootstrap 5.1.3, Feather 4.24.1, Font Awesome 5.15.1 et AOS chargés par CDN.
+`Code source sur GitHub <https://github.com/MaximeC31/orange-county-lettings>`_.
 
 .. toctree::
    :maxdepth: 2
 
    installation
    architecture
-   reference
    utilisation
+   reference
    deploiement

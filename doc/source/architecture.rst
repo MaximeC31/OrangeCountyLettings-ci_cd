@@ -4,115 +4,33 @@ Architecture
 Applications
 ------------
 
-Trois applications composent le projet.
+- ``oc_lettings_site`` : configuration, accueil et migrations historiques.
+- ``lettings`` : adresses, locations, vues et templates associés.
+- ``profiles`` : profils, vues et templates associés.
 
-- ``oc_lettings_site`` : configuration, URLs racine, accueil et historique des migrations. Aucun fichier ``models.py`` ni ``admin.py``.
-- ``lettings`` : modèles ``Address`` et ``Letting``.
-- ``profiles`` : modèle ``Profile``.
+Les templates communs sont dans ``templates/`` et les ressources dans ``static/``. Les routes racine restent dans ``oc_lettings_site.urls``.
 
-Les templates sont dans ``<app>/templates/<app>/``. Les gabarits communs ``base.html``, ``404.html`` et ``500.html`` sont dans ``templates/``. Les fichiers statiques sont dans ``static/``. ``ROOT_URLCONF`` vaut ``"oc_lettings_site.urls"`` et ``DEFAULT_AUTO_FIELD`` vaut ``AutoField``. L'administration expose ``Address`` et ``Letting`` sous Lettings, ``Profile`` sous Profiles.
+Modèles
+-------
 
-Modèles et tables
------------------
+- ``Address`` : numéro (maximum 9999), rue et ville (64 caractères), État (2 caractères), code postal (maximum 99999) et code pays (3 caractères).
+- ``Letting`` : titre (256 caractères maximum) et adresse en relation un-à-un. Supprimer l'adresse supprime la location associée, pas l'inverse.
+- ``Profile`` : utilisateur en relation un-à-un et ville favorite facultative (64 caractères maximum). L'accesseur inverse est ``User.profiles_profile``.
 
-.. list-table:: Champs et validateurs
-   :header-rows: 1
-   :widths: 14 20 28 38
+Les tables métier sont ``lettings_address``, ``lettings_letting`` et ``profiles_profile``. L'administration expose les trois modèles. Voir :doc:`reference` pour les docstrings.
 
-   * - Modèle
-     - Champ
-     - Type
-     - Contraintes
-   * - ``Address``
-     - ``number``
-     - ``PositiveIntegerField``
-     - ``MaxValueValidator(9999)``
-   * -
-     - ``street``
-     - ``CharField(64)``
-     -
-   * -
-     - ``city``
-     - ``CharField(64)``
-     -
-   * -
-     - ``state``
-     - ``CharField(2)``
-     - ``MinLengthValidator(2)``
-   * -
-     - ``zip_code``
-     - ``PositiveIntegerField``
-     - ``MaxValueValidator(99999)``
-   * -
-     - ``country_iso_code``
-     - ``CharField(3)``
-     - ``MinLengthValidator(3)``
-   * - ``Letting``
-     - ``title``
-     - ``CharField(256)``
-     -
-   * -
-     - ``address``
-     - ``OneToOneField(Address, CASCADE)``
-     - une adresse par location
-   * - ``Profile``
-     - ``user``
-     - ``OneToOneField(User, CASCADE)``
-     - ``related_name="profiles_profile"``
-   * -
-     - ``favorite_city``
-     - ``CharField(64)``
-     - ``blank=True``
+Routes
+------
 
-Relations et suppressions
--------------------------
+- ``/`` : accueil.
+- ``/lettings/`` et ``/lettings/<id>/`` : liste et détail des locations.
+- ``/profiles/`` et ``/profiles/<username>/`` : liste et détail des profils.
+- ``/admin/`` : administration Django.
+- ``/lettings/sentry-test/`` : test Sentry réservé au personnel actif ; voir :doc:`deploiement`.
 
-``Address`` et ``Letting`` sont liés un-à-un. Supprimer une ``Address`` supprime sa ``Letting``. Supprimer une ``Letting`` ne supprime pas l'``Address``.
-
-``User`` et ``Profile`` sont liés un-à-un. L'accesseur inverse est ``User.profiles_profile``, jamais ``User.profile``.
-
-Interfaces HTTP
----------------
-
-.. list-table:: Routes
-   :header-rows: 1
-   :widths: 30 18 28 24
-
-   * - URL
-     - Nom
-     - Vue
-     - Template
-   * - ``/``
-     - ``index``
-     - ``oc_lettings_site.views.index``
-     - ``index.html``
-   * - ``/lettings/``
-     - ``lettings:index``
-     - ``lettings.views.index``
-     - ``lettings/index.html``
-   * - ``/lettings/<int:letting_id>/``
-     - ``lettings:letting``
-     - ``lettings.views.letting``
-     - ``lettings/letting.html``
-   * - ``/profiles/``
-     - ``profiles:index``
-     - ``profiles.views.index``
-     - ``profiles/index.html``
-   * - ``/profiles/<str:username>/``
-     - ``profiles:profile``
-     - ``profiles.views.profile``
-     - ``profiles/profile.html``
-   * - ``/admin/``
-     - ``admin:index``
-     - interface Django
-     - interface Django
-
+Les noms des routes de liste et de détail sont ``lettings:index``, ``lettings:letting``, ``profiles:index`` et ``profiles:profile``.
 
 Migrations
 ----------
 
-Sept migrations composent le projet : ``oc_lettings_site`` 0001 et 0002, ``lettings`` 0001 à 0003, ``profiles`` 0001 et 0002.
-
-Le parcours crée les modèles historiques, copie les données par l'ORM en conservant les clés primaires et les relations, puis supprime les anciens modèles. ``lettings.0003`` corrige seulement le pluriel ``addresses``. Conserver tous les fichiers de migration.
-
-Un rollback recrée des tables historiques vides et ne restaure pas les données. Utiliser une sauvegarde cohérente.
+Les migrations Django créent les nouvelles tables, copient les données avec l'ORM en conservant les clés et relations, puis suppriment les anciens modèles. Conserver leur historique. Un rollback recrée des tables historiques vides : il ne remplace pas une sauvegarde.
